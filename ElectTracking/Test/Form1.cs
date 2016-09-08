@@ -101,7 +101,10 @@ namespace Test
 
         private void button9_Click(object sender, EventArgs e)
         {
-            eTracer1._DrawESquare(ECDiagnose.ETracer.eNumDatum.ZX, Convert.ToInt32(textBox3.Text));
+            //eTracer1._DrawESquare(ECDiagnose.eNumDatum.ZX, Convert.ToInt32(textBox3.Text));
+            //eTracer1._DrawECircle(ECDiagnose.eNumDatum.ZX, Convert.ToInt32(textBox3.Text));
+            eTracer1._Draw(@"..\ECIR-S30.DAT", @"..\CIRCULAR-S30.DAT", ECDiagnose.eNumDatum.ZX);
+            //eTracer1._Draw(@"..\ECIR-CIRCLE.DAT", @"..\CIRCULAR-CIRCLE.DAT", ECDiagnose.eNumDatum.ZX);
         }
 
         private void button10_Click(object sender, EventArgs e)
