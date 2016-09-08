@@ -30,7 +30,7 @@
         {
             this.button9 = new System.Windows.Forms.Button();
             this.button10 = new System.Windows.Forms.Button();
-            this.eTracer1 = new ETracking.ETracer();
+            this.eTracer1 = new XC.ETracer();
             ((System.ComponentModel.ISupportInitialize)(this.eTracer1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -81,7 +81,7 @@
 
         #endregion
 
-        private ETracking.ETracer eTracer1;
+        private XC.ETracer eTracer1;
         private System.Windows.Forms.Button button9;
         private System.Windows.Forms.Button button10;
     }

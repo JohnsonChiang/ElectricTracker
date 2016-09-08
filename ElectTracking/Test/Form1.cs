@@ -22,8 +22,8 @@ namespace Test
             tIdx++;
             switch (tIdx)
             {
-                case 1: eTracer1._Draw(@"..\ECIR-S30.DAT", @"..\CIRCULAR-S30.DAT", ETracking.eNumDatum.ZX); break;
-                case 2: eTracer1._Draw(@"..\ECIR-CIRCLE.DAT", @"..\CIRCULAR-CIRCLE.DAT", ETracking.eNumDatum.ZX); break;
+                case 1: eTracer1._Draw(@"..\ECIR-S30.DAT", @"..\CIRCULAR-S30.DAT", XC.eNumDatum.ZX); break;
+                case 2: eTracer1._Draw(@"..\ECIR-CIRCLE.DAT", @"..\CIRCULAR-CIRCLE.DAT", XC.eNumDatum.ZX); break;
                 //case 3: eTracer1._Draw(@"..\ECIR-CIRCLE.DAT", @"..\CIRCULAR-CIRCLE.DAT", ECDiagnose.eNumDatum.ZX); break;
                 //case 4: eTracer1._Draw(@"..\ECIR-CIRCLE.DAT", @"..\CIRCULAR-CIRCLE.DAT", ECDiagnose.eNumDatum.ZX); break;
                 default:

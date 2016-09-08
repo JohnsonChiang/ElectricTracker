@@ -1,4 +1,4 @@
-﻿namespace ETracking
+﻿namespace XC
 {
     partial class ETracer
     {

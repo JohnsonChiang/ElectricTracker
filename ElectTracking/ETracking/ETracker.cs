@@ -9,7 +9,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.IO;
 
-namespace ETracking
+namespace XC
 {
     public enum eNumDatum { XY, ZX, YZ } 
     public enum eNumMethod { None, Circle, Rectangle, Diamond, RigidTapping }

@@ -8,8 +8,8 @@
     <ProjectGuid>{CC0F9310-BCFE-4335-BA9E-925F2E820089}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ETracking</RootNamespace>
-    <AssemblyName>ETracking</AssemblyName>
+    <RootNamespace>XC</RootNamespace>
+    <AssemblyName>XC</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
