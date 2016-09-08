@@ -75,17 +75,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ECDiagnose\ETracker.csproj">
+    <ProjectReference Include="..\ETracking\ETracker.csproj">
       <Project>{CC0F9310-BCFE-4335-BA9E-925F2E820089}</Project>
       <Name>ETracker</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\ElectTracking\ElectTracking.csproj">
-      <Project>{7E98A15F-7501-46C0-8A57-6A92A06D8380}</Project>
-      <Name>ElectTracking</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\XYChart\XYChart.csproj">
-      <Project>{D292F3BA-6E7E-40EB-BD8B-D6951FD993A9}</Project>
-      <Name>XYChart</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

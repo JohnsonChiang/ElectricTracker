@@ -1,6 +1,6 @@
-﻿namespace XYChart
+﻿namespace ETracking
 {
-    partial class XYChart
+    partial class ETracer
     {
         /// <summary>
         /// 設計工具所需的變數。
@@ -30,12 +30,10 @@
         {
             this.SuspendLayout();
             // 
-            // UserControl1
+            // ETracer
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Name = "UserControl1";
-            this.Size = new System.Drawing.Size(762, 425);
+            this.Name = "ETracer";
+            this.Size = new System.Drawing.Size(501, 451);
             this.ResumeLayout(false);
 
         }
