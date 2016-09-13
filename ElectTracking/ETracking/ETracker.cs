@@ -111,17 +111,24 @@ namespace XC
 
             // 計算：初始設定      
             gTrack.Initial(_Width_Chart, ECIR);
-            // 計算：並取得 [最大誤差]、[最小誤差]、[平均誤差]、[每格誤差量] 
-            float[] fRet = gTrack.Calculate(Datum, listPts.ToArray());  
-
-            // 誤差繪圖
-            drawPattern_Err(G, gTrack.GetMappingXY());              //繪圖：誤差循跡
-            drawComment_Err(G, fRet[0], fRet[1], fRet[2]);          //繪圖：誤差註解
 
             if (gMethod != eNumMethod.RigidTapping)
-                drawAxis(G, Datum, (int)fRet[3]);                    //繪圖：標準軸線
+            {
+                gTrack._Datum = Datum;
+                // 計算：並取得 [最大誤差]、[最小誤差]、[平均誤差]、[每格誤差量]          
+                float[] fRet = gTrack.Calculate(listPts.ToArray());
+                drawPattern_Err(G, gTrack.GetMappingXY());              //繪圖：誤差循跡
+                drawComment_Err(G, fRet[0], fRet[1], fRet[2]);          //繪圖：誤差註解          
+                drawAxis(G, Datum, (int)fRet[3]);                       //繪圖：標準軸線
+            }
             else
-                drawAxis_rigidTapping(G, Datum, (int)fRet[3]);       //繪圖：標準軸線
+            {
+                float[] fRet = gTrack.Calculate(listPts.ToArray());
+                //drawPattern_Err(G, gTrack.GetMappingXY());              //繪圖：誤差循跡
+                //drawComment_Err(G, fRet[0], fRet[1], fRet[2]);          //繪圖：誤差註解          
+                //drawAxis(G, Datum, (int)fRet[3]);                       //繪圖：標準軸線
+                //drawAxis_rigidTapping(G, (int)fRet[3]);                 //繪圖：標準軸線
+            }
             return true;
         }
         public void _SaveImage()
@@ -216,18 +223,12 @@ namespace XC
                 G.RotateTransform(45);
             }
         }
-        private void drawAxis_rigidTapping(Graphics G, eNumDatum Datum, int UnitDiv)         //標準座標系統  + 軸名 + 軸線 + 刻度
+        private void drawAxis_rigidTapping(Graphics G, int UnitDiv)         //標準座標系統  + 軸名 + 軸線 + 刻度
         {
             myMatrix = new Matrix(1, 0, 0, 1, this.Width / 2, this.Height / 2);     //畫布零點偏移
             G.Transform = myMatrix;
 
             string sAxis0 = "Axis0", sAxis1 = "Axis1";                  //sAxis0(水平軸)，sAxis1(垂直軸)
-            switch (Datum)
-            {
-                case eNumDatum.XY: sAxis0 = "X"; sAxis1 = "Y"; break;
-                case eNumDatum.ZX: sAxis0 = "Z"; sAxis1 = "X"; break;
-                case eNumDatum.YZ: sAxis0 = "Y"; sAxis1 = "Z"; break;
-            }
             G.DrawString(sAxis0, gFontAxis, Brushes.Blue, _Width_Chart / 2, 0);                //水平軸名 
             G.DrawString(sAxis1, gFontAxis, Brushes.Blue, 0, -_Width_Chart / 2 - 12 - 4);      //垂直軸名
             G.DrawString(string.Format("+{0} um", UnitDiv), gFontComment, Brushes.Blue, 7, -_Width_Chart / 20 * 9.3f);              //單位標示
@@ -278,11 +279,11 @@ namespace XC
                 }
                 G.RotateTransform(45);
             }
-            //picGraphics.ResetTransform();
-            //picGraphics.Transform = myMatrix;
         }
         private void drawComment_Std(Graphics G, float[] ECIR)
         {
+            if (gMethod == eNumMethod.RigidTapping) return;
+
             G.ResetTransform();
             string strECIR = "";
             switch (gMethod)
@@ -312,6 +313,8 @@ namespace XC
         }
         private void drawPattern_Std(Graphics G, float[] ECIR)
         {
+            if (gMethod == eNumMethod.RigidTapping) return;
+
             myMatrix = new Matrix(1, 0, 0, -1, this.Width / 2, this.Height / 2);                //畫布零點偏移
             G.Transform = myMatrix;
             float h = _Width_Chart / 1.414f;
@@ -349,12 +352,13 @@ namespace XC
 
     public class TrackConvert
     {
+        eNumMethod gMethod = eNumMethod.Circle;
         eNumDatum gDatum = eNumDatum.XY;
 
         float[] gDataStd = new float[5];        //Ecir.dat      (type,Xc,Yc,Zc,R/L/0/0)
-        float[,] gDataReal_Ori;                //把Circular.dat資料移至原點
-        float[,] gDataReal_Err;                //處理完的誤差點位              X,Y.angle
-        float[,] gDataReal_Gdi;                //人機要畫的圖點
+        float[,] gDataReal_Ori;                 //把Circular.dat資料移至原點
+        float[,] gDataReal_Err;                 //處理完的誤差點位              X,Y.angle
+        float[,] gDataReal_Gdi;                 //人機要畫的圖點
 
         float delta_angle = 1.0f;               //特殊狀況時判斷的角度範圍
         float multiple = 0;
@@ -372,39 +376,66 @@ namespace XC
             //}
         }
 
+        public eNumDatum _Datum
+        {
+            get { return gDatum; }
+            set { gDatum = value; }
+        }
+
         public void Initial(float GraphicsHeight, float[] ValStd)
         {
             if (ValStd.Length == 5)
             {
                 for (int i = 0; i < 5; i++) gDataStd[i] = ValStd[i];
                 this.H = GraphicsHeight;
+
+                if (gDataStd[0] < 0 || gDataStd[0] >= Enum.GetNames(typeof(eNumMethod)).Length) return;
+                gMethod = (eNumMethod)(int)gDataStd[0];
             }
         }
-        public float[] Calculate(eNumDatum Datum, float[][] ValReal)
+
+
+        public float[] Calculate(float[][] ValReal)
         {
-            gDatum = Datum;
-            //============= 將圖形偏移到原點 ================================
-            gDataReal_Ori = new float[ValReal.GetLength(0), 2];
-            for (int i = 0; i < ValReal.GetLength(0); i++)
+            if (gMethod == eNumMethod.Circle ||
+                gMethod == eNumMethod.Rectangle ||
+                gMethod == eNumMethod.Diamond)
             {
-                switch (gDatum)
+                //============= 將圖形偏移到原點 ================================
+                gDataReal_Ori = new float[ValReal.GetLength(0), 2];
+                for (int i = 0; i < ValReal.GetLength(0); i++)
                 {
-                    case eNumDatum.XY:
-                        gDataReal_Ori[i, 0] = ValReal[i][0] - gDataStd[1]; //x
-                        gDataReal_Ori[i, 1] = ValReal[i][1] - gDataStd[2]; //y
-                        break;
-                    case eNumDatum.ZX:
-                        gDataReal_Ori[i, 0] = ValReal[i][2] - gDataStd[3]; //z
-                        gDataReal_Ori[i, 1] = ValReal[i][0] - gDataStd[1]; //x
-                        break;
-                    case eNumDatum.YZ:
-                        gDataReal_Ori[i, 0] = ValReal[i][1] - gDataStd[2]; //y
-                        gDataReal_Ori[i, 1] = ValReal[i][2] - gDataStd[3]; //z
-                        break;
+                    switch (gDatum)
+                    {
+                        case eNumDatum.XY:
+                            gDataReal_Ori[i, 0] = ValReal[i][0] - gDataStd[1]; //x
+                            gDataReal_Ori[i, 1] = ValReal[i][1] - gDataStd[2]; //y
+                            break;
+                        case eNumDatum.ZX:
+                            gDataReal_Ori[i, 0] = ValReal[i][2] - gDataStd[3]; //z
+                            gDataReal_Ori[i, 1] = ValReal[i][0] - gDataStd[1]; //x
+                            break;
+                        case eNumDatum.YZ:
+                            gDataReal_Ori[i, 0] = ValReal[i][1] - gDataStd[2]; //y
+                            gDataReal_Ori[i, 1] = ValReal[i][2] - gDataStd[3]; //z
+                            break;
+                    }
+                }
+            }
+            else if (gMethod == eNumMethod.RigidTapping)
+            {
+                gDataReal_Ori = new float[ValReal.GetLength(0), 5];
+                for (int i = 0; i < ValReal.GetLength(0); i++)
+                {
+                    gDataReal_Ori[i, 0] = ValReal[i][0];
+                    gDataReal_Ori[i, 1] = ValReal[i][1];
+                    gDataReal_Ori[i, 2] = ValReal[i][2];
+                    gDataReal_Ori[i, 3] = ValReal[i][3];
+                    gDataReal_Ori[i, 4] = ValReal[i][4];
                 }
             }
             //=====================================================================
-            switch ((eNumMethod)gDataStd[0])
+            switch (gMethod)
             {
                 case eNumMethod.Circle:
                     calError_circle(ValReal);
@@ -418,12 +449,14 @@ namespace XC
                     return null;
 
                 case eNumMethod.RigidTapping:
-                    return null;
+                    //calError_rigidTapping(ValReal);
+                    return getPlot_rigidTapping();
 
                 default:
                     return null;
             }
         }
+
         public float[,] GetMappingXY()
         {
             return gDataReal_Gdi;
@@ -798,7 +831,51 @@ namespace XC
             return new float[] { max_error, min_error, avg_error, unitdiv };
         }
 
+        //==== 剛攻 ====
+        //private void calError_rigidTapping(float[][] TrackVal)       //算圓形的點位
+        //{
+        //    gDataReal_Err = new float[gDataReal_Ori.GetLength(0), 1];
+        //    for (int i = 0; i < TrackVal.GetLength(0); i++)
+        //    {
+        //        gDataReal_Err[i, 0] = TrackVal[i][3];           //gDataReal_Err[i][0] = delta R
+        //    }
+        //}
+        private float[] getPlot_rigidTapping()     //計算圖紙上的點
+        {
+            int i = 0;
+            float max_error = 0, min_error = 99999;
+            float temp = 0, avg_error = 0, sum = 0;
+            float angle = 0;
 
+            ////算最大誤差 最小誤差 平均誤差
+            //for (i = 0; i < gDataReal_Err.GetLength(0); i++)
+            //{
+            //    temp = gDataReal_Err[i, 0];
+            //    if (max_error < temp) max_error = temp;
+            //    if (min_error > temp) min_error = temp;
+            //    sum = sum + temp;
+            //}
+            //avg_error = sum / gDataReal_Err.GetLength(0);
+
+            ////算一些必要的圖紙資訊
+            //unitdiv = max_error / (grid_in / 2);//內部可視格數只有一半  所以要/2
+            //unitdiv = Convert.ToSingle(Math.Ceiling(unitdiv / 10)) * 10;
+            //scale = R / (unitdiv * grid_in);//邊長/2
+            //multiple = (H * 0.4F) / R;
+
+            ////計算圖紙上的點&點誤差         
+            //gDataReal_Gdi = new float[gDataReal_Err.GetLength(0), 2];
+            //for (i = 0; i < gDataReal_Err.GetLength(0); i++)
+            //{
+            //    //計算圖紙上的點誤差
+            //    gDataReal_Gdi[i, 0] = gDataReal_Ori[i, 0] * (gDataReal_Err[i, 0] * scale + R) / (gDataReal_Err[i, 0] + R);
+            //    gDataReal_Gdi[i, 1] = gDataReal_Ori[i, 1] * (gDataReal_Err[i, 0] * scale + R) / (gDataReal_Err[i, 0] + R); ;
+
+            //    gDataReal_Gdi[i, 0] = gDataReal_Gdi[i, 0] * multiple;
+            //    gDataReal_Gdi[i, 1] = gDataReal_Gdi[i, 1] * multiple;
+            //}
+            return new float[] { max_error, min_error, avg_error, unitdiv };
+        }
 
         /* 未使用
         private void rotate_diamond_to_square() //把菱形旋轉成方形
