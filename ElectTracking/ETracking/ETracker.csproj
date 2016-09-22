@@ -44,16 +44,8 @@
     <Compile Include="ETracker.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="ETracker.Designer.cs">
-      <DependentUpon>ETracker.cs</DependentUpon>
-    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Service Include="{94E38DFF-614B-4cbd-B67C-F211BB35CE8B}" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="ETracker.resx">
-      <DependentUpon>ETracker.cs</DependentUpon>
-    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

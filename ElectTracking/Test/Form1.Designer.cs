@@ -31,7 +31,9 @@
             this.button9 = new System.Windows.Forms.Button();
             this.button10 = new System.Windows.Forms.Button();
             this.eTracer1 = new XC.ETracer();
+            this.eTracerOnTick1 = new XC.ETracerOnTick();
             ((System.ComponentModel.ISupportInitialize)(this.eTracer1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.eTracerOnTick1)).BeginInit();
             this.SuspendLayout();
             // 
             // button9
@@ -56,34 +58,47 @@
             // 
             // eTracer1
             // 
+            this.eTracer1._Padding_Chart = 20;
             this.eTracer1.BackColor = System.Drawing.Color.White;
-            this.eTracer1.Location = new System.Drawing.Point(12, 12);
+            this.eTracer1.Location = new System.Drawing.Point(13, 13);
             this.eTracer1.Name = "eTracer1";
             this.eTracer1.Size = new System.Drawing.Size(450, 450);
-            this.eTracer1._Padding_Chart = 20;
-            this.eTracer1.TabIndex = 11;
+            this.eTracer1.TabIndex = 16;
             this.eTracer1.TabStop = false;
+            // 
+            // eTracerOnTick1
+            // 
+            this.eTracerOnTick1.BackColor = System.Drawing.Color.White;
+            this.eTracerOnTick1.Location = new System.Drawing.Point(13, 13);
+            this.eTracerOnTick1.Name = "eTracerOnTick1";
+            this.eTracerOnTick1.Size = new System.Drawing.Size(900, 250);
+            this.eTracerOnTick1.TabIndex = 17;
+            this.eTracerOnTick1.TabStop = false;
+            this.eTracerOnTick1.Visible = false;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(475, 537);
+            this.ClientSize = new System.Drawing.Size(930, 537);
+            this.Controls.Add(this.eTracer1);
+            this.Controls.Add(this.eTracerOnTick1);
             this.Controls.Add(this.button10);
             this.Controls.Add(this.button9);
-            this.Controls.Add(this.eTracer1);
             this.Name = "Form1";
             this.Text = "Form1";
             ((System.ComponentModel.ISupportInitialize)(this.eTracer1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.eTracerOnTick1)).EndInit();
             this.ResumeLayout(false);
 
         }
 
         #endregion
 
-        private XC.ETracer eTracer1;
         private System.Windows.Forms.Button button9;
         private System.Windows.Forms.Button button10;
+        private XC.ETracer eTracer1;
+        private XC.ETracerOnTick eTracerOnTick1;
     }
 }
 
