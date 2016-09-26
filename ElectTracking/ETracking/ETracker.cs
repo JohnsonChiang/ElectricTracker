@@ -14,8 +14,8 @@ namespace XC
     public partial class ETracer : PictureBox
     {
         public enum eNumDatum { XY, ZX, YZ }
-        enum eNumMethod { Circle, Rectangle, Diamond }     
-        
+        enum eNumMethod { None, Circle, Rectangle, Diamond }
+
         private System.ComponentModel.IContainer components = null;
         protected override void Dispose(bool disposing)
         {
@@ -37,6 +37,7 @@ namespace XC
         eNumMethod gMethod = eNumMethod.Circle;
 
         Matrix myMatrix;
+        Graphics G;
         int gPadding_Chart = 20;                        //兩側留白距離
 
         public ETracer()
@@ -65,7 +66,7 @@ namespace XC
             if (File.Exists(fileInit) != true) { MessageBox.Show(string.Format("{0} isn't Exist!", fileInit)); return false; }
             if (File.Exists(fileTrack) != true) { MessageBox.Show(string.Format("{0}  isn't Exist!", fileTrack)); return false; }
 
-            Graphics G = this.CreateGraphics();
+            G = this.CreateGraphics();
 
             //型態(0:圓 1:方 2:菱 3:剛攻) 、 圓心X 、 圓心Y 、 圓心Z 、 標準圓半徑   (um)  ==> (新)
             float[] ECIR = new float[5];
@@ -122,9 +123,6 @@ namespace XC
             #endregion
             #endregion
 
-            // 標準圖元
-            drawComment_Std(G, ECIR);                               //繪圖：標準註解
-            drawPattern_Std(G, ECIR);                               //繪圖：標準圖元
 
             // 計算：初始設定      
             if (ECIR.Length == 5)
@@ -136,11 +134,15 @@ namespace XC
                 gMethod = (eNumMethod)(int)gDataStd[0];
             }
 
+            // 標準圖元
+            drawComment_Std();                               //繪圖：標準註解
+            drawPattern_Std();                               //繪圖：標準圖元
+
             // 計算：並取得 [最大誤差]、[最小誤差]、[平均誤差]、[每格誤差量]          
             float[] fRet = calculate(listPts.ToArray());
-            drawPattern_Err(G, gDataReal_Gdi);              //繪圖：誤差循跡
-            drawComment_Err(G, fRet[0], fRet[1], fRet[2]);          //繪圖：誤差註解          
-            drawAxis(G, (int)fRet[3]);                       //繪圖：標準軸線
+            drawPattern_Err();              //繪圖：誤差循跡
+            drawComment_Err(fRet[0], fRet[1], fRet[2]);          //繪圖：誤差註解          
+            drawAxis((int)fRet[3]);                       //繪圖：標準軸線
             return true;
         }
         public void _SaveImage()
@@ -166,7 +168,7 @@ namespace XC
             }
         }
 
-        private void drawAxis(Graphics G, int UnitDiv)         //標準座標系統  + 軸名 + 軸線 + 刻度
+        private void drawAxis(int UnitDiv)         //標準座標系統  + 軸名 + 軸線 + 刻度
         {
             myMatrix = new Matrix(1, 0, 0, 1, this.Width / 2, this.Height / 2);     //畫布零點偏移
             G.Transform = myMatrix;
@@ -234,18 +236,18 @@ namespace XC
                 G.RotateTransform(45);
             }
         }
-        private void drawComment_Std(Graphics G, float[] ECIR)
+        private void drawComment_Std()
         {
             G.ResetTransform();
             string strECIR = "";
             switch (gMethod)
             {
                 case eNumMethod.Circle:
-                    strECIR = string.Format("Standard:\n X :  {0:F3}\n Y :  {1:F3}\n Z : {2:F3}\n R : {3:F3}", ECIR[1], ECIR[2], ECIR[3], ECIR[4]);
+                    strECIR = string.Format("Standard:\n X :  {0:F3}\n Y :  {1:F3}\n Z : {2:F3}\n R : {3:F3}", gDataStd[1], gDataStd[2], gDataStd[3], gDataStd[4]);
                     break;
                 case eNumMethod.Rectangle:
                 case eNumMethod.Diamond:
-                    strECIR = string.Format("Standard:\n X :  {0:F3}\n Y :  {1:F3}\n Z : {2:F3}\n L : {3:F3}", ECIR[1], ECIR[2], ECIR[3], ECIR[4]);
+                    strECIR = string.Format("Standard:\n X :  {0:F3}\n Y :  {1:F3}\n Z : {2:F3}\n L : {3:F3}", gDataStd[1], gDataStd[2], gDataStd[3], gDataStd[4]);
                     break;
                 default:
                     return;
@@ -254,14 +256,14 @@ namespace XC
             G.DrawString(strECIR
                 , gFontComment, SystemBrushes.ControlText, 0, this.ClientRectangle.Height - sizeECIR.Height);
         }
-        private void drawComment_Err(Graphics G, float maxErr_Positve, float maxErr_Negative, float avgErr)
+        private void drawComment_Err(float maxErr_Positve, float maxErr_Negative, float avgErr)
         {
             G.ResetTransform();
             G.DrawString(string.Format("Deviation:\nmax:  {0:F3}\nmin:  {1:F3}\navg: {2:F3}"
                 , maxErr_Positve, maxErr_Negative, avgErr)
                 , gFontComment, SystemBrushes.ControlText, 0, 0);
         }
-        private void drawPattern_Std(Graphics G, float[] ECIR)
+        private void drawPattern_Std()
         {
             myMatrix = new Matrix(1, 0, 0, -1, this.Width / 2, this.Height / 2);                //畫布零點偏移
             G.Transform = myMatrix;
@@ -282,12 +284,12 @@ namespace XC
                     return;
             }
         }
-        private void drawPattern_Err(Graphics G, float[,] ptXY)
+        private void drawPattern_Err()
         {
-            PointF[] ptArray = new PointF[ptXY.GetLength(0)];
+            PointF[] ptArray = new PointF[gDataReal_Gdi.GetLength(0)];
             for (int i = 0; i < ptArray.Length; i++)
             {
-                ptArray[i] = new PointF(ptXY[i, 0], ptXY[i, 1]);
+                ptArray[i] = new PointF(gDataReal_Gdi[i, 0], gDataReal_Gdi[i, 1]);
             }
 
             myMatrix = new Matrix(1, 0, 0, -1, this.Width / 2, this.Height / 2);                //畫布零點偏移
@@ -886,7 +888,7 @@ namespace XC
                 gLimit[i] = (float)(Math.Ceiling(gLimit[i] / 10) * 10);
             }
         }
-        private void drawAxis()         //標準座標系統  + 軸名 + 軸線 + 刻度
+        private void drawAxis()     //標準座標系統  + 軸名 + 軸線 + 刻度
         {
             G.Clear(this.BackColor);
             G.ResetTransform();
