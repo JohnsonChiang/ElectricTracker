@@ -30,11 +30,12 @@
         {
             this.button9 = new System.Windows.Forms.Button();
             this.button10 = new System.Windows.Forms.Button();
-            this.eTracer1 = new XC.ETracer();
-            this.eTracerOnTick1 = new XC.ETracerOnTick();
             this.chkSpeed = new System.Windows.Forms.CheckBox();
             this.chkError = new System.Windows.Forms.CheckBox();
             this.chkTorque = new System.Windows.Forms.CheckBox();
+            this.eTracer1 = new XC.ETracer();
+            this.eTracerOnTick1 = new XC.ETracerOnTick();
+            this.btnFit = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.eTracer1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.eTracerOnTick1)).BeginInit();
             this.SuspendLayout();
@@ -58,30 +59,6 @@
             this.button10.Text = "SavePic";
             this.button10.UseVisualStyleBackColor = true;
             this.button10.Click += new System.EventHandler(this.button10_Click);
-            // 
-            // eTracer1
-            // 
-            this.eTracer1._Padding_Chart = 20;
-            this.eTracer1.BackColor = System.Drawing.Color.White;
-            this.eTracer1.Location = new System.Drawing.Point(13, 13);
-            this.eTracer1.Name = "eTracer1";
-            this.eTracer1.Size = new System.Drawing.Size(450, 450);
-            this.eTracer1.TabIndex = 16;
-            this.eTracer1.TabStop = false;
-            // 
-            // eTracerOnTick1
-            // 
-            this.eTracerOnTick1._VisibleType = new bool[] {
-        true,
-        true,
-        true};
-            this.eTracerOnTick1.BackColor = System.Drawing.Color.White;
-            this.eTracerOnTick1.Location = new System.Drawing.Point(13, 13);
-            this.eTracerOnTick1.Name = "eTracerOnTick1";
-            this.eTracerOnTick1.Size = new System.Drawing.Size(900, 250);
-            this.eTracerOnTick1.TabIndex = 17;
-            this.eTracerOnTick1.TabStop = false;
-            this.eTracerOnTick1.Visible = false;
             // 
             // chkSpeed
             // 
@@ -122,11 +99,47 @@
             this.chkTorque.UseVisualStyleBackColor = true;
             this.chkTorque.CheckedChanged += new System.EventHandler(this.chk_CheckedChanged);
             // 
+            // eTracer1
+            // 
+            this.eTracer1._Datum = XC.ETracer.eNumDatum.XY;
+            this.eTracer1._Padding_Chart = 20;
+            this.eTracer1.BackColor = System.Drawing.Color.White;
+            this.eTracer1.Location = new System.Drawing.Point(13, 13);
+            this.eTracer1.Name = "eTracer1";
+            this.eTracer1.Size = new System.Drawing.Size(450, 450);
+            this.eTracer1.TabIndex = 16;
+            this.eTracer1.TabStop = false;
+            // 
+            // eTracerOnTick1
+            // 
+            this.eTracerOnTick1._VisibleType = new bool[] {
+        true,
+        true,
+        true};
+            this.eTracerOnTick1.BackColor = System.Drawing.Color.White;
+            this.eTracerOnTick1.Location = new System.Drawing.Point(13, 13);
+            this.eTracerOnTick1.Name = "eTracerOnTick1";
+            this.eTracerOnTick1.Size = new System.Drawing.Size(900, 250);
+            this.eTracerOnTick1.TabIndex = 17;
+            this.eTracerOnTick1.TabStop = false;
+            this.eTracerOnTick1.Visible = false;
+            // 
+            // btnFit
+            // 
+            this.btnFit.Location = new System.Drawing.Point(788, 270);
+            this.btnFit.Name = "btnFit";
+            this.btnFit.Size = new System.Drawing.Size(94, 54);
+            this.btnFit.TabIndex = 19;
+            this.btnFit.Text = "Fit";
+            this.btnFit.UseVisualStyleBackColor = true;
+            this.btnFit.Click += new System.EventHandler(this.btnFit_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(930, 537);
+            this.Controls.Add(this.btnFit);
             this.Controls.Add(this.eTracer1);
             this.Controls.Add(this.eTracerOnTick1);
             this.Controls.Add(this.button10);
@@ -152,6 +165,7 @@
         private System.Windows.Forms.CheckBox chkSpeed;
         private System.Windows.Forms.CheckBox chkError;
         private System.Windows.Forms.CheckBox chkTorque;
+        private System.Windows.Forms.Button btnFit;
     }
 }
 

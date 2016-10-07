@@ -738,6 +738,7 @@ namespace XC
         Font gFontStr = new Font("Arial", 7F, FontStyle.Regular);
         Pen gPen_AxisLine = new Pen(Color.Gray, 1);
         Pen gPen_GridLine = new Pen(Color.Gray, 1);
+        Pen gPen_Resize = new Pen(Color.YellowGreen, 2);
         Pen[] gPens = new Pen[]{
             new Pen(Color.Black, 1), 
             new Pen(Color.Magenta, 1),
@@ -745,10 +746,16 @@ namespace XC
             new Pen(Color.Blue  , 1),
             new Pen(Color.Green  , 1)};
 
-        float[,] gData;                 //從檔案取得資料
+        float[,] gInputData;                 //從檔案取得資料
         float[] gLimit;                 //轉速、誤差、扭力比的最大限(在80%處)
         RectangleF gRectPlot;           //畫布範圍(GDI+)
         PointF gPtOrigin;               //原點的座標位置(GDI+)
+
+        Point gStartClick;              //框選的起點
+        Point gEndClick;                //框選的終點
+        int gStartTick = 0;             //繪製Tick的起點
+        int gEndTick = 0;               //繪製Tick的終點
+
         Graphics G;
         bool[] gVisible = new bool[] { true, true, true };
 
@@ -761,7 +768,67 @@ namespace XC
             this.ResumeLayout(false);
             gPen_GridLine.DashStyle = DashStyle.Dot;
             gPen_GridLine.DashPattern = new float[] { 2, 4 };
+            gPen_Resize.DashStyle = DashStyle.Dot;
+            gPen_Resize.DashPattern = new float[] { 2, 2 };
+
+            this.MouseDown += new MouseEventHandler(ETracerOnTick_MouseDown);
+            this.MouseMove += new MouseEventHandler(ETracerOnTick_MouseMove);
+            this.MouseUp += new MouseEventHandler(ETracerOnTick_MouseUp);
+            this.Paint += new PaintEventHandler(ETracerOnTick_Paint);
         }
+
+        private void ETracerOnTick_Paint(object sender, PaintEventArgs e)
+        {
+            if (G != null)
+            {
+                if (tmpBmp != null)
+                {
+                    this.Image = tmpBmp;
+                    e.Graphics.ResetTransform();
+                    e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(100, Color.Yellow)),
+                        gStartClick.X, gRectPlot.Top, gEndClick.X - gStartClick.X, gRectPlot.Height);              //外框線+底色
+                }
+            }
+        }
+
+        Image tmpBmp;
+        private void ETracerOnTick_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (tmpBmp == null)
+            {
+                if (e.X < gRectPlot.Left || e.X > gRectPlot.Right) return;
+                if (e.Y < gRectPlot.Top || e.Y > gRectPlot.Bottom) return;
+
+                tmpBmp = new Bitmap(this.ClientSize.Width, this.ClientSize.Height);
+                Rectangle rect = this.RectangleToScreen(this.ClientRectangle);
+                Graphics g = Graphics.FromImage(tmpBmp);
+                g.CopyFromScreen(rect.Left, rect.Top, 0, 0, rect.Size);
+
+                gStartClick = e.Location;
+            }
+        }
+        private void ETracerOnTick_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (tmpBmp != null)
+            {
+                if (e.X < gRectPlot.Left || e.X > gRectPlot.Right) return;
+                gEndClick = e.Location;
+                this.Refresh();
+            }
+        }
+        private void ETracerOnTick_MouseUp(object sender, MouseEventArgs e)
+        {
+            float lengthTick = gRectPlot.Width / (gEndTick - gStartTick - 1);           //水平每隔間距(畫布)
+
+            gEndTick = Convert.ToInt32((gEndClick.X - gRectPlot.Left) / lengthTick) + gStartTick;      
+            gStartTick = Convert.ToInt32((gStartClick.X - gRectPlot.Left) / lengthTick) + gStartTick; 
+
+            tmpBmp = null;
+            this.Image = tmpBmp;
+            this.Refresh();
+            drawAll();   
+        }
+
         public bool _Draw(string fileTrack)
         {
             this.Refresh();
@@ -794,20 +861,21 @@ namespace XC
             }
             #endregion
             float[][] ValReal = listPts.ToArray();          //Circular.dat資料               
-            gData = new float[ValReal.GetLength(0), 5];
+            gInputData = new float[ValReal.GetLength(0), 5];
             for (int i = 0; i < ValReal.GetLength(0); i++)
             {
-                gData[i, 0] = ValReal[i][0];        //命令轉速(RPM)
-                gData[i, 1] = ValReal[i][1];        //實際轉速(RPM)
-                gData[i, 2] = ValReal[i][2];        //軸向誤差(um)
-                gData[i, 3] = ValReal[i][3];        //主軸扭力比
-                gData[i, 4] = ValReal[i][4];        //軸向扭力比
+                gInputData[i, 0] = ValReal[i][0];        //命令轉速(RPM)
+                gInputData[i, 1] = ValReal[i][1];        //實際轉速(RPM)
+                gInputData[i, 2] = ValReal[i][2];        //軸向誤差(um)
+                gInputData[i, 3] = ValReal[i][3];        //主軸扭力比
+                gInputData[i, 4] = ValReal[i][4];        //軸向扭力比
             }
 
-            // 計算：初始設定                 
+            // 計算：初始設定 
             getLimit();
-            drawAxis();                 //繪圖：標準軸線
-            drawData();
+
+            gEndTick = gInputData.GetLength(0) - 1;
+            drawAll();
             return true;
         }
         public void _SaveImage()
@@ -851,33 +919,44 @@ namespace XC
                 }
             }
         }
+        public void _Fit()
+        {
+            gStartTick = 0;
+            gEndTick = gInputData.GetLength(0) - 1;
+            drawAll();
+        }
 
+        private void drawAll()
+        {
+            drawAxis();                 //繪圖：標準軸線
+            drawData();
+        }
         private void getLimit()     //取得各數數的最大值、最小值
         {
             float[,] limit = new float[3, 2];           //row:轉速,誤差,扭力比   col:min,max
             gLimit = new float[3];              //取絕對值後的最大值 (0~2:轉速、誤差、扭力比)
 
             //最小值      //最大值
-            limit[0, 0] = limit[0, 1] = gData[0, 0];    //初始轉速  (index: 0,1)
-            limit[1, 0] = limit[1, 1] = gData[0, 2];    //初始誤差  (index: 2)
-            limit[2, 0] = limit[2, 1] = gData[0, 3];    //初始扭力比(index: 3,4)            
-            for (int i = 0; i < gData.GetLength(0); i++)
+            limit[0, 0] = limit[0, 1] = gInputData[0, 0];    //初始轉速  (index: 0,1)
+            limit[1, 0] = limit[1, 1] = gInputData[0, 2];    //初始誤差  (index: 2)
+            limit[2, 0] = limit[2, 1] = gInputData[0, 3];    //初始扭力比(index: 3,4)            
+            for (int i = 0; i < gInputData.GetLength(0); i++)
             {
                 //轉速
-                if (gData[i, 0] < limit[0, 0]) limit[0, 0] = gData[i, 0];   //最小轉速
-                if (gData[i, 1] < limit[0, 0]) limit[0, 0] = gData[i, 1];
-                if (gData[i, 0] > limit[0, 1]) limit[0, 1] = gData[i, 0];   //最大轉速
-                if (gData[i, 1] > limit[0, 1]) limit[0, 1] = gData[i, 1];
+                if (gInputData[i, 0] < limit[0, 0]) limit[0, 0] = gInputData[i, 0];   //最小轉速
+                if (gInputData[i, 1] < limit[0, 0]) limit[0, 0] = gInputData[i, 1];
+                if (gInputData[i, 0] > limit[0, 1]) limit[0, 1] = gInputData[i, 0];   //最大轉速
+                if (gInputData[i, 1] > limit[0, 1]) limit[0, 1] = gInputData[i, 1];
 
                 //軸向誤差
-                if (gData[i, 2] < limit[1, 0]) limit[1, 0] = gData[i, 2];   //最小誤差
-                if (gData[i, 2] > limit[1, 1]) limit[1, 1] = gData[i, 2];   //最大誤差
+                if (gInputData[i, 2] < limit[1, 0]) limit[1, 0] = gInputData[i, 2];   //最小誤差
+                if (gInputData[i, 2] > limit[1, 1]) limit[1, 1] = gInputData[i, 2];   //最大誤差
 
                 //扭力比
-                if (gData[i, 3] < limit[2, 0]) limit[2, 0] = gData[i, 3];   //最小扭力比
-                if (gData[i, 4] < limit[2, 0]) limit[2, 0] = gData[i, 4];
-                if (gData[i, 3] > limit[2, 1]) limit[2, 1] = gData[i, 3];   //最大扭力比
-                if (gData[i, 4] > limit[2, 1]) limit[2, 1] = gData[i, 4];
+                if (gInputData[i, 3] < limit[2, 0]) limit[2, 0] = gInputData[i, 3];   //最小扭力比
+                if (gInputData[i, 4] < limit[2, 0]) limit[2, 0] = gInputData[i, 4];
+                if (gInputData[i, 3] > limit[2, 1]) limit[2, 1] = gInputData[i, 3];   //最大扭力比
+                if (gInputData[i, 4] > limit[2, 1]) limit[2, 1] = gInputData[i, 4];
             }
             for (int i = 0; i < 3; i++)
             {
@@ -901,12 +980,12 @@ namespace XC
             for (int i = 0; i < 5; i++) fWid -= sizTitle[i].Width;
             fWid = fWid / 4;                    //標題間的平均間距
 
-            float tmp = 0;
+            float lengthTick = 0;
             G.DrawString(strTitle[0], gFontStr, new SolidBrush(gPens[0].Color), 0, 0);              //軸名:Act.Speed  
             for (int i = 1; i < 5; i++)
             {
-                tmp += sizTitle[i - 1].Width + fWid;
-                G.DrawString(strTitle[i], gFontStr, new SolidBrush(gPens[i].Color), tmp, 0);
+                lengthTick += sizTitle[i - 1].Width + fWid;
+                G.DrawString(strTitle[i], gFontStr, new SolidBrush(gPens[i].Color), lengthTick, 0);
             }
             //=====================================================================================================================
             SizeF sizLabel1 = G.MeasureString(string.Format(" {0} ", (int)gLimit[0]), gFontStr);    //標籤尺寸：左
@@ -923,13 +1002,13 @@ namespace XC
             G.DrawRectangle(gPen_AxisLine, gRectPlot.Left, gRectPlot.Top, gRectPlot.Width, gRectPlot.Height);              //外框線  (畫布)
             G.DrawLine(gPen_AxisLine, gRectPlot.Left, gPtOrigin.Y, gRectPlot.Right, gPtOrigin.Y);                        //水平軸線(畫布)
 
-            tmp = gRectPlot.Height / 10;                                                              //垂直間距(畫布)
+            lengthTick = gRectPlot.Height / 10;                                                              //垂直間距(畫布)
             for (int i = 1; i < 6; i++)
             {
                 if (i < 5)
                 {
-                    G.DrawLine(gPen_GridLine, gRectPlot.Left, gPtOrigin.Y - tmp * i, gRectPlot.Right, gPtOrigin.Y - tmp * i);     //格線(軸線向上)
-                    G.DrawLine(gPen_GridLine, gRectPlot.Left, gPtOrigin.Y + tmp * i, gRectPlot.Right, gPtOrigin.Y + tmp * i);     //格線(軸線向下)
+                    G.DrawLine(gPen_GridLine, gRectPlot.Left, gPtOrigin.Y - lengthTick * i, gRectPlot.Right, gPtOrigin.Y - lengthTick * i);     //格線(軸線向上)
+                    G.DrawLine(gPen_GridLine, gRectPlot.Left, gPtOrigin.Y + lengthTick * i, gRectPlot.Right, gPtOrigin.Y + lengthTick * i);     //格線(軸線向下)
                 }
                 else
                 {   //標籤文字：0  
@@ -938,35 +1017,36 @@ namespace XC
                     G.DrawString(string.Format(" {0}", 0), gFontStr, new SolidBrush(gPens[3].Color), gRectPlot.Right + sizLabel2.Width, gPtOrigin.Y - sizeStr.Height / 2);
                 }
                 //標籤文字：Label-1
-                G.DrawString(string.Format(" {0}", (int)(gLimit[0] / 5 * i)), gFontStr, new SolidBrush(gPens[0].Color), 0, gPtOrigin.Y - sizeStr.Height / 2 - tmp * i);
-                G.DrawString(string.Format("-{0}", (int)(gLimit[0] / 5 * i)), gFontStr, new SolidBrush(gPens[0].Color), 0, gPtOrigin.Y - sizeStr.Height / 2 + tmp * i);
+                G.DrawString(string.Format(" {0}", (int)(gLimit[0] / 5 * i)), gFontStr, new SolidBrush(gPens[0].Color), 0, gPtOrigin.Y - sizeStr.Height / 2 - lengthTick * i);
+                G.DrawString(string.Format("-{0}", (int)(gLimit[0] / 5 * i)), gFontStr, new SolidBrush(gPens[0].Color), 0, gPtOrigin.Y - sizeStr.Height / 2 + lengthTick * i);
 
                 //標籤文字：Label-2
-                G.DrawString(string.Format(" {0}", (int)(gLimit[1] / 5 * i)), gFontStr, new SolidBrush(gPens[2].Color), gRectPlot.Right, gPtOrigin.Y - sizeStr.Height / 2 - tmp * i);
-                G.DrawString(string.Format("-{0}", (int)(gLimit[1] / 5 * i)), gFontStr, new SolidBrush(gPens[2].Color), gRectPlot.Right, gPtOrigin.Y - sizeStr.Height / 2 + tmp * i);
+                G.DrawString(string.Format(" {0}", (int)(gLimit[1] / 5 * i)), gFontStr, new SolidBrush(gPens[2].Color), gRectPlot.Right, gPtOrigin.Y - sizeStr.Height / 2 - lengthTick * i);
+                G.DrawString(string.Format("-{0}", (int)(gLimit[1] / 5 * i)), gFontStr, new SolidBrush(gPens[2].Color), gRectPlot.Right, gPtOrigin.Y - sizeStr.Height / 2 + lengthTick * i);
 
                 //標籤文字：Label-3
-                G.DrawString(string.Format(" {0}", (int)(gLimit[2] / 5 * i)), gFontStr, new SolidBrush(gPens[3].Color), gRectPlot.Right + sizLabel2.Width, gPtOrigin.Y - sizeStr.Height / 2 - tmp * i);
-                G.DrawString(string.Format("-{0}", (int)(gLimit[2] / 5 * i)), gFontStr, new SolidBrush(gPens[3].Color), gRectPlot.Right + sizLabel2.Width, gPtOrigin.Y - sizeStr.Height / 2 + tmp * i);
+                G.DrawString(string.Format(" {0}", (int)(gLimit[2] / 5 * i)), gFontStr, new SolidBrush(gPens[3].Color), gRectPlot.Right + sizLabel2.Width, gPtOrigin.Y - sizeStr.Height / 2 - lengthTick * i);
+                G.DrawString(string.Format("-{0}", (int)(gLimit[2] / 5 * i)), gFontStr, new SolidBrush(gPens[3].Color), gRectPlot.Right + sizLabel2.Width, gPtOrigin.Y - sizeStr.Height / 2 + lengthTick * i);
             }
-
-            int Count = gData.GetLength(0);
-            int iDiv = Count / 10;                                                                      //格線：水平方向刻劃間隔tick數
-            tmp = gRectPlot.Width / Count;                                                                   //水平間距(畫布)
+            //*******************************
+            int Count = gEndTick - gStartTick - 1;
+            int tickcountDiv = Count / 10;                          //格線：水平方向刻劃間隔tick數 ( 分成10段 )
+            lengthTick = gRectPlot.Width / Count;                   //水平間距(畫布)
             string strTick = "";
             SizeF sizTick;
-            for (int i = 0; i < Count; i += iDiv)
+            for (int i = 0; i < Count; i += tickcountDiv)
             {
-                G.DrawLine(gPen_GridLine, gRectPlot.Left + tmp * i, gRectPlot.Top, gRectPlot.Left + tmp * i, gRectPlot.Bottom);     //格線(原點向右)
+                G.DrawLine(gPen_GridLine,
+                    gRectPlot.Left + lengthTick * i, gRectPlot.Top, gRectPlot.Left + lengthTick * i, gRectPlot.Bottom);     //格線(原點向右)
 
-                strTick = string.Format("{0}", i);
+                strTick = string.Format("{0}", gStartTick + i);
                 sizTick = G.MeasureString(strTick, gFontStr);
-                G.DrawString(string.Format("{0}", strTick), gFontStr, new SolidBrush(gPen_GridLine.Color), gRectPlot.Left + tmp * i - sizTick.Width / 2, gRectPlot.Bottom);
+                G.DrawString(string.Format("{0}", strTick), gFontStr, new SolidBrush(gPen_GridLine.Color), gRectPlot.Left + lengthTick * i - sizTick.Width / 2, gRectPlot.Bottom);
             }
         }
         private void drawData()
         {
-            int Count = gData.GetLength(0);
+            int Count = gEndTick - gStartTick - 1;
             PointF[] ptArray = new PointF[Count];
             int idx = 0;
             Matrix myMatrix;
@@ -977,8 +1057,7 @@ namespace XC
                 else if (n == 3 || n == 4) idx = 2;
 
                 if (gVisible[idx] == false) continue;
-
-                for (int i = 0; i < Count; i++) ptArray[i] = new PointF(i, gData[i, n]);
+                for (int i = 0; i < Count; i++) ptArray[i] = new PointF(i, gInputData[gStartTick  + i, n]);
                 myMatrix = new Matrix(gRectPlot.Width / Count, 0, 0, -(gRectPlot.Height / gLimit[idx] / 2), gPtOrigin.X, gPtOrigin.Y);
                 G.Transform = myMatrix;
                 G.DrawLines(gPens[n], ptArray);

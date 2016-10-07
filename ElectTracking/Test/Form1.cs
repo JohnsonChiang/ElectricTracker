@@ -63,5 +63,10 @@ namespace Test
             bool[] check = new bool[] { chkSpeed.Checked, chkError.Checked, chkTorque.Checked };
             eTracerOnTick1._VisibleType = check;
         }
+
+        private void btnFit_Click(object sender, EventArgs e)
+        {
+            eTracerOnTick1._Fit();
+        }
     }
 }
